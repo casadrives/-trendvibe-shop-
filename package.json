@@ -1,0 +1,36 @@
+{
+  "name": "trendy-shop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trendy Shop - Free Dropshipping E-commerce Platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "vite build",
+    "serve": "vite preview",
+    "start:lambda": "netlify-lambda serve netlify/functions",
+    "build:lambda": "netlify-lambda build netlify/functions",
+    "seed": "node scripts/seedDatabase.js",
+    "create:admin": "node scripts/createAdmin.js",
+    "setup:db": "npm run seed && npm run create:admin"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "axios": "^1.6.0",
+    "vue": "^3.3.0",
+    "vue-router": "^4.2.0",
+    "vuex": "^4.1.0",
+    "@fortawesome/fontawesome-free": "^6.4.0",
+    "tailwindcss": "^3.3.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0",
+    "mongoose": "^7.0.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^12.0.0",
+    "netlify-lambda": "^2.0.15",
+    "vite": "^4.5.0"
+  }
+}
