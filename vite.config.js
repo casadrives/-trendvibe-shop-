@@ -4,7 +4,6 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/-trendvibe-shop-/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -31,8 +30,5 @@ export default defineConfig({
   },
   server: {
     port: 5173
-  },
-  optimizeDeps: {
-    include: ['vue', 'vue-router', 'vuex', 'axios']
   }
 })

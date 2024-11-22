@@ -1,14 +1,18 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import store from '../store'
 
 // Views
 import Home from '../views/Home.vue'
 import Category from '../views/Category.vue'
+import Product from '../views/Product.vue'
 import Cart from '../views/Cart.vue'
+import Checkout from '../views/Checkout.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Profile from '../views/Profile.vue'
-import PricingDemo from '../components/PricingDemo.vue'
+import Admin from '../views/Admin.vue'
+import Orders from '../views/Orders.vue'
+import PricingDemo from '../views/PricingDemo.vue'
 
 const routes = [
   {
@@ -19,8 +23,12 @@ const routes = [
   {
     path: '/category/:id',
     name: 'Category',
-    component: Category,
-    props: true
+    component: Category
+  },
+  {
+    path: '/product/:id',
+    name: 'Product',
+    component: Product
   },
   {
     path: '/cart',
@@ -28,21 +36,37 @@ const routes = [
     component: Cart
   },
   {
+    path: '/checkout',
+    name: 'Checkout',
+    component: Checkout,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/login',
     name: 'Login',
-    component: Login,
-    meta: { requiresGuest: true }
+    component: Login
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register,
-    meta: { requiresGuest: true }
+    component: Register
   },
   {
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: Orders,
     meta: { requiresAuth: true }
   },
   {
@@ -58,30 +82,29 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
   scrollBehavior() {
     return { top: 0 }
   }
 })
 
-// Navigation Guards
+// Navigation guard
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = store.getters.isAuthenticated
+  const isAuthenticated = localStorage.getItem('token')
+  const isAdmin = localStorage.getItem('isAdmin') === 'true'
 
-  // Check for protected routes
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-    return
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!isAuthenticated) {
+      next('/login')
+    } else if (to.matched.some(record => record.meta.requiresAdmin) && !isAdmin) {
+      next('/')
+    } else {
+      next()
+    }
+  } else {
+    next()
   }
-
-  // Check for guest-only routes (login, register)
-  if (to.meta.requiresGuest && isAuthenticated) {
-    next('/')
-    return
-  }
-
-  next()
 })
 
 export default router
