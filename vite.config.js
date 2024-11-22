@@ -8,22 +8,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    },
+    }
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: true,
-    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': [
-            'vue',
-            'vue-router',
-            'vuex',
-            'axios'
-          ]
+          vendor: ['vue', 'vue-router', 'vuex', 'axios'],
         }
       }
     }

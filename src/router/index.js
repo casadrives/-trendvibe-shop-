@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import store from '../store'
 
 // Views
 import Home from '../views/Home.vue'
@@ -83,28 +82,7 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-  scrollBehavior() {
-    return { top: 0 }
-  }
-})
-
-// Navigation guard
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('token')
-  const isAdmin = localStorage.getItem('isAdmin') === 'true'
-
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!isAuthenticated) {
-      next('/login')
-    } else if (to.matched.some(record => record.meta.requiresAdmin) && !isAdmin) {
-      next('/')
-    } else {
-      next()
-    }
-  } else {
-    next()
-  }
+  routes
 })
 
 export default router
