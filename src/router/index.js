@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import store from '../store'
 
 // Views
@@ -58,7 +58,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL || '/-trendvibe-shop-/'),
+  history: createWebHashHistory(),
   routes,
   scrollBehavior() {
     return { top: 0 }
