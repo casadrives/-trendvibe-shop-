@@ -50,11 +50,15 @@ const routes = [
     name: 'PricingDemo',
     component: PricingDemo,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL || '/-trendvibe-shop-/'),
   routes,
   scrollBehavior() {
     return { top: 0 }
