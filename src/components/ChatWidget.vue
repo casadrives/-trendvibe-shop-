@@ -16,7 +16,7 @@
       <div class="chat-widget__header">
         <div class="chat-widget__agent">
           <div class="chat-widget__avatar">
-            <img src="../assets/ai-avatar.png" alt="AI Assistant">
+            <i class="fas fa-robot text-2xl text-blue-500"></i>
           </div>
           <div class="chat-widget__info">
             <h3>AI Support Assistant</h3>
@@ -308,10 +308,9 @@ export default {
   background: white;
 }
 
-.chat-widget__avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.chat-widget__avatar i {
+  font-size: 2rem;
+  color: #3498db;
 }
 
 .chat-widget__info h3 {

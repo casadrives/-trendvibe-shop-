@@ -42,11 +42,15 @@
             </div>
           </div>
           <div class="relative">
-            <img 
-              src="@/assets/hero-products.png" 
-              alt="Trending Products" 
-              class="rounded-lg shadow-2xl transform hover:scale-105 transition duration-500"
+            <div 
+              class="rounded-lg shadow-2xl transform hover:scale-105 transition duration-500 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 aspect-square flex items-center justify-center"
             >
+              <div class="text-center text-white">
+                <i class="fas fa-shopping-bag text-6xl mb-4"></i>
+                <h3 class="text-2xl font-bold">Amazing Deals</h3>
+                <p class="mt-2">Everything under €50</p>
+              </div>
+            </div>
             <div class="absolute -bottom-6 -right-6 bg-yellow-400 text-indigo-900 rounded-full px-6 py-3 font-bold shadow-lg transform rotate-12">
               Up to 70% Off!
             </div>

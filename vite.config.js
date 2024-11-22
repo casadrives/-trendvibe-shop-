@@ -11,10 +11,18 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    sourcemap: true,
+    // Minify for better performance
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true
+      }
+    }
   },
   server: {
-    port: 3000,
+    port: 5173,
     proxy: {
       '/.netlify/functions': {
         target: 'http://localhost:8888',

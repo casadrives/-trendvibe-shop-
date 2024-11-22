@@ -1,9 +1,10 @@
 <template>
-  <div id="app">
-    <nav-bar />
-    <router-view />
-    <chat-widget />
-    <footer-component />
+  <div class="min-h-screen flex flex-col">
+    <nav-bar></nav-bar>
+    <main class="flex-grow">
+      <router-view></router-view>
+    </main>
+    <footer-component></footer-component>
   </div>
 </template>
 
@@ -33,25 +34,5 @@ export default {
 </script>
 
 <style>
-@import 'bootstrap/dist/css/bootstrap.min.css';
-@import '@fortawesome/fontawesome-free/css/all.min.css';
-
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.router-view-container {
-  flex: 1;
-}
-
-.navbar-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-footer {
-  margin-top: auto;
-}
+@import './assets/main.css';
 </style>

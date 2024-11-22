@@ -14,7 +14,7 @@ class PricingService {
     if (this.shouldUpdateCache(productId)) {
       try {
         // Fetch latest market data
-        const marketData = await this.fetchMarketData(productId)
+        const marketData = await this._fetchMarketData(productId)
         this.marketDataCache.set(productId, {
           data: marketData,
           timestamp: Date.now()
@@ -23,7 +23,7 @@ class PricingService {
       } catch (error) {
         console.error('Error fetching market data:', error)
         // Return cached data if available, otherwise default values
-        return this.marketDataCache.get(productId)?.data || this.getDefaultMarketData()
+        return this.marketDataCache.get(productId)?.data || this._getDefaultMarketData()
       }
     }
     return this.marketDataCache.get(productId).data
@@ -32,7 +32,7 @@ class PricingService {
   // Calculate optimal price for a product
   async calculateOptimalPrice(product) {
     const marketData = await this.getMarketData(product.id)
-    const seasonalMultiplier = this.getSeasonalMultiplier(product.category)
+    const seasonalMultiplier = this._getSeasonalMultiplier(product.category)
     
     // Get base optimal price
     let optimalPrice = PRICING_STRATEGIES.calculateOptimalPrice(product, marketData)
@@ -57,7 +57,7 @@ class PricingService {
     const marketDataList = await Promise.all(marketDataPromises)
 
     // Combine market data
-    const aggregateMarketData = this.aggregateMarketData(marketDataList)
+    const aggregateMarketData = this._aggregateMarketData(marketDataList)
 
     // Calculate bundle price
     const bundlePrice = PRICING_STRATEGIES.calculateBundlePrice(products, aggregateMarketData)
@@ -84,7 +84,7 @@ class PricingService {
 
   // Analyze competitive position
   async analyzeCompetitivePosition(product) {
-    const competitorPrices = await this.getCompetitorPrices(product.id)
+    const competitorPrices = await this._getCompetitorPrices(product.id)
     return PRICING_STRATEGIES.analyzeCompetitivePricing(product, competitorPrices)
   }
 
@@ -94,24 +94,20 @@ class PricingService {
     return MARGIN_OPTIMIZATION.calculateOptimalMargin(product, marketData)
   }
 
-  // Private helper methods
-  private async fetchMarketData(productId) {
-    // Implement API call to get market data
-    // This is a placeholder - replace with actual API endpoint
+  // Helper methods (prefixed with _ to indicate they're internal)
+  async _fetchMarketData(productId) {
     try {
-      const response = await axios.get(`/api/market-data/${productId}`)
+      const response = await axios.get(`/.netlify/functions/market-data/${productId}`)
       return response.data
     } catch (error) {
       console.error('Error fetching market data:', error)
-      return this.getDefaultMarketData()
+      return this._getDefaultMarketData()
     }
   }
 
-  private async getCompetitorPrices(productId) {
-    // Implement competitor price fetching
-    // This is a placeholder - replace with actual API endpoint
+  async _getCompetitorPrices(productId) {
     try {
-      const response = await axios.get(`/api/competitor-prices/${productId}`)
+      const response = await axios.get(`/.netlify/functions/competitor-prices/${productId}`)
       return response.data
     } catch (error) {
       console.error('Error fetching competitor prices:', error)
@@ -119,62 +115,47 @@ class PricingService {
     }
   }
 
-  private getSeasonalMultiplier(category) {
-    const now = new Date()
-    const month = now.getMonth() + 1
-    const day = now.getDate()
-    const dateStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-
-    // Find current season
-    let currentSeason = null
-    for (const [season, data] of Object.entries(SEASONAL_PRICING)) {
-      if (this.isDateInRange(dateStr, data.duration)) {
-        currentSeason = data
-        break
-      }
+  _getDefaultMarketData() {
+    return {
+      averagePrice: 0,
+      demandLevel: 'medium',
+      competitorPrices: [],
+      marketTrend: 'stable'
     }
-
-    return currentSeason?.categories[category] || 1.0
   }
 
-  private isDateInRange(dateStr, duration) {
-    return dateStr >= duration.start && dateStr <= duration.end
+  _getSeasonalMultiplier(category) {
+    return SEASONAL_PRICING.getMultiplier(category, new Date())
   }
 
-  private shouldUpdateCache(productId) {
+  _aggregateMarketData(marketDataList) {
+    return {
+      averagePrice: marketDataList.reduce((sum, data) => sum + data.averagePrice, 0) / marketDataList.length,
+      demandLevel: this._aggregateDemandLevel(marketDataList.map(data => data.demandLevel)),
+      marketTrend: this._aggregateMarketTrend(marketDataList.map(data => data.marketTrend))
+    }
+  }
+
+  _aggregateDemandLevel(demandLevels) {
+    const levels = { low: 0, medium: 1, high: 2 }
+    const average = demandLevels.reduce((sum, level) => sum + levels[level], 0) / demandLevels.length
+    if (average < 0.5) return 'low'
+    if (average > 1.5) return 'high'
+    return 'medium'
+  }
+
+  _aggregateMarketTrend(trends) {
+    const trendCounts = trends.reduce((counts, trend) => {
+      counts[trend] = (counts[trend] || 0) + 1
+      return counts
+    }, {})
+    return Object.entries(trendCounts).sort((a, b) => b[1] - a[1])[0][0]
+  }
+
+  shouldUpdateCache(productId) {
     const cached = this.marketDataCache.get(productId)
     if (!cached) return true
     return Date.now() - cached.timestamp > this.updateInterval
-  }
-
-  private getDefaultMarketData() {
-    return {
-      competitorPrices: [],
-      demandLevel: 'medium',
-      seasonality: 'normal',
-      stockLevel: 'medium',
-      customerSegment: 'standard',
-      competitionLevel: 'medium',
-      productUniqueness: 'medium'
-    }
-  }
-
-  private aggregateMarketData(marketDataList) {
-    // Combine market data from multiple products
-    return {
-      competitorPrices: marketDataList.flatMap(d => d.competitorPrices),
-      demandLevel: this.getMostFrequent(marketDataList.map(d => d.demandLevel)),
-      seasonality: this.getMostFrequent(marketDataList.map(d => d.seasonality)),
-      stockLevel: this.getMostFrequent(marketDataList.map(d => d.stockLevel)),
-      customerSegment: this.getMostFrequent(marketDataList.map(d => d.customerSegment)),
-      competitionLevel: this.getMostFrequent(marketDataList.map(d => d.competitionLevel))
-    }
-  }
-
-  private getMostFrequent(arr) {
-    return arr.sort((a,b) =>
-      arr.filter(v => v === a).length - arr.filter(v => v === b).length
-    ).pop()
   }
 }
 

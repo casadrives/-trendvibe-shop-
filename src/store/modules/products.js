@@ -3,158 +3,18 @@ import axios from 'axios'
 
 const state = {
   products: [],
-  featuredProducts: [],
-  trendingProducts: [],
+  currentProduct: null,
   loading: false,
   error: null,
   filters: {
     category: null,
-    priceRange: [0, 50],
-    sortBy: 'featured',
-    searchQuery: '',
-    inStock: true,
-    freeShipping: false,
-    onSale: false
-  }
-}
-
-const getters = {
-  allProducts: state => state.products,
-  featuredProducts: state => state.featuredProducts,
-  trendingProducts: state => state.trendingProducts,
-  filteredProducts: state => {
-    let filtered = [...state.products]
-
-    // Apply category filter
-    if (state.filters.category) {
-      filtered = filtered.filter(product => 
-        product.category === state.filters.category
-      )
-    }
-
-    // Apply price range filter
-    filtered = filtered.filter(product => {
-      const price = product.discountedPrice || product.price;
-      return price >= state.filters.priceRange[0] &&
-             price <= state.filters.priceRange[1];
-    })
-
-    // Apply search query
-    if (state.filters.searchQuery) {
-      const query = state.filters.searchQuery.toLowerCase()
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query) ||
-        product.tags.some(tag => tag.toLowerCase().includes(query))
-      )
-    }
-
-    // Apply in stock filter
-    if (state.filters.inStock) {
-      filtered = filtered.filter(product => product.stockQuantity > 0)
-    }
-
-    // Apply free shipping filter
-    if (state.filters.freeShipping) {
-      filtered = filtered.filter(product => product.freeShipping)
-    }
-
-    // Apply on sale filter
-    if (state.filters.onSale) {
-      filtered = filtered.filter(product => product.discountedPrice)
-    }
-
-    // Apply sorting
-    switch (state.filters.sortBy) {
-      case 'price-low':
-        filtered.sort((a, b) => {
-          const priceA = a.discountedPrice || a.price;
-          const priceB = b.discountedPrice || b.price;
-          return priceA - priceB;
-        });
-        break;
-      case 'price-high':
-        filtered.sort((a, b) => {
-          const priceA = a.discountedPrice || a.price;
-          const priceB = b.discountedPrice || b.price;
-          return priceB - priceA;
-        });
-        break;
-      case 'trending':
-        filtered.sort((a, b) => b.viewCount - a.viewCount);
-        break;
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        break;
-      default:
-        // Featured sorting (default)
-        filtered.sort((a, b) => b.featured - a.featured);
-    }
-
-    return filtered;
+    priceRange: null,
+    sortBy: 'newest'
   },
-  isLoading: state => state.loading,
-  error: state => state.error
-}
-
-const actions = {
-  async fetchProducts({ commit }) {
-    try {
-      commit('SET_LOADING', true)
-      const response = await axios.get('/api/products')
-      commit('SET_PRODUCTS', response.data)
-    } catch (error) {
-      commit('SET_ERROR', error.message)
-    } finally {
-      commit('SET_LOADING', false)
-    }
-  },
-
-  async fetchFeaturedProducts({ commit }) {
-    try {
-      commit('SET_LOADING', true)
-      const response = await axios.get('/api/products/featured')
-      commit('SET_FEATURED_PRODUCTS', response.data)
-    } catch (error) {
-      commit('SET_ERROR', error.message)
-    } finally {
-      commit('SET_LOADING', false)
-    }
-  },
-
-  async fetchTrendingProducts({ commit }) {
-    try {
-      commit('SET_LOADING', true)
-      const response = await axios.get('/api/products/trending')
-      commit('SET_TRENDING_PRODUCTS', response.data)
-    } catch (error) {
-      commit('SET_ERROR', error.message)
-    } finally {
-      commit('SET_LOADING', false)
-    }
-  },
-
-  async incrementProductView({ commit }, productId) {
-    try {
-      await axios.post(`/api/products/${productId}/view`)
-    } catch (error) {
-      console.error('Failed to increment product view:', error)
-    }
-  },
-
-  updateFilters({ commit }, filters) {
-    commit('SET_FILTERS', filters)
-  },
-
-  async searchProducts({ commit }, query) {
-    try {
-      commit('SET_LOADING', true)
-      commit('SET_FILTERS', { ...state.filters, searchQuery: query })
-    } catch (error) {
-      commit('SET_ERROR', error.message)
-    } finally {
-      commit('SET_LOADING', false)
-    }
+  pagination: {
+    page: 1,
+    limit: 12,
+    total: 0
   }
 }
 
@@ -163,12 +23,8 @@ const mutations = {
     state.products = products
   },
 
-  SET_FEATURED_PRODUCTS(state, products) {
-    state.featuredProducts = products
-  },
-
-  SET_TRENDING_PRODUCTS(state, products) {
-    state.trendingProducts = products
+  SET_CURRENT_PRODUCT(state, product) {
+    state.currentProduct = product
   },
 
   SET_LOADING(state, loading) {
@@ -181,13 +37,173 @@ const mutations = {
 
   SET_FILTERS(state, filters) {
     state.filters = { ...state.filters, ...filters }
+  },
+
+  SET_PAGINATION(state, pagination) {
+    state.pagination = { ...state.pagination, ...pagination }
+  },
+
+  UPDATE_PRODUCT(state, updatedProduct) {
+    const index = state.products.findIndex(p => p._id === updatedProduct._id)
+    if (index !== -1) {
+      state.products.splice(index, 1, updatedProduct)
+    }
+  }
+}
+
+const actions = {
+  async fetchProducts({ commit, state }) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+
+      const { page, limit } = state.pagination
+      const { category, priceRange, sortBy } = state.filters
+      
+      const response = await axios.get('/.netlify/functions/products', {
+        params: {
+          page,
+          limit,
+          category,
+          priceRange,
+          sortBy
+        }
+      })
+
+      commit('SET_PRODUCTS', response.data.products)
+      commit('SET_PAGINATION', {
+        total: response.data.total,
+        page: response.data.page
+      })
+
+      return response.data
+    } catch (error) {
+      commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch products')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  async fetchProductById({ commit }, productId) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+
+      const response = await axios.get(`/.netlify/functions/products/${productId}`)
+      commit('SET_CURRENT_PRODUCT', response.data)
+
+      return response.data
+    } catch (error) {
+      commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch product')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  async createProduct({ commit }, productData) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+
+      const response = await axios.post('/.netlify/functions/products', productData)
+      return response.data
+    } catch (error) {
+      commit('SET_ERROR', error.response?.data?.message || 'Failed to create product')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  async updateProduct({ commit }, { productId, productData }) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+
+      const response = await axios.put(`/.netlify/functions/products/${productId}`, productData)
+      commit('UPDATE_PRODUCT', response.data)
+      
+      return response.data
+    } catch (error) {
+      commit('SET_ERROR', error.response?.data?.message || 'Failed to update product')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  async deleteProduct({ commit }, productId) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+
+      await axios.delete(`/.netlify/functions/products/${productId}`)
+      return true
+    } catch (error) {
+      commit('SET_ERROR', error.response?.data?.message || 'Failed to delete product')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  setFilters({ commit, dispatch }, filters) {
+    commit('SET_FILTERS', filters)
+    commit('SET_PAGINATION', { page: 1 }) // Reset to first page when filters change
+    return dispatch('fetchProducts')
+  },
+
+  setPage({ commit, dispatch }, page) {
+    commit('SET_PAGINATION', { page })
+    return dispatch('fetchProducts')
+  }
+}
+
+const getters = {
+  allProducts: state => state.products,
+  currentProduct: state => state.currentProduct,
+  loading: state => state.loading,
+  error: state => state.error,
+  filters: state => state.filters,
+  pagination: state => state.pagination,
+  
+  filteredProducts: state => {
+    let filtered = [...state.products]
+    
+    if (state.filters.category) {
+      filtered = filtered.filter(p => p.category === state.filters.category)
+    }
+    
+    if (state.filters.priceRange) {
+      const [min, max] = state.filters.priceRange
+      filtered = filtered.filter(p => p.price >= min && p.price <= max)
+    }
+    
+    switch (state.filters.sortBy) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price - b.price)
+        break
+      case 'price-desc':
+        filtered.sort((a, b) => b.price - a.price)
+        break
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        break
+      case 'popularity':
+        filtered.sort((a, b) => b.popularity - a.popularity)
+        break
+    }
+    
+    return filtered
   }
 }
 
 export default {
   namespaced: true,
   state,
-  getters,
+  mutations,
   actions,
-  mutations
+  getters
 }

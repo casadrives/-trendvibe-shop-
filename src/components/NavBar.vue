@@ -1,77 +1,97 @@
 <template>
   <nav class="bg-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
-        <!-- Logo and Main Nav -->
-        <div class="flex">
-          <router-link to="/" class="flex-shrink-0 flex items-center">
-            <span class="text-xl font-bold text-indigo-600">TrendyShop</span>
+        <!-- Logo and Brand -->
+        <div class="flex-shrink-0 flex items-center">
+          <router-link to="/" class="text-2xl font-bold text-blue-600">
+            TrendVibe
           </router-link>
-          
-          <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-            <router-link 
-              to="/"
-              class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              active-class="border-indigo-500 text-gray-900"
-            >
-              Home
-            </router-link>
-            
-            <router-link 
-              to="/pricing-demo"
-              class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              active-class="border-indigo-500 text-gray-900"
-            >
-              Pricing Demo
-            </router-link>
-          </div>
         </div>
 
-        <!-- Right Nav -->
-        <div class="flex items-center">
-          <!-- Cart -->
-          <router-link 
-            to="/cart"
-            class="p-2 text-gray-400 hover:text-gray-500 relative"
+        <!-- Navigation Links -->
+        <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            class="nav-link inline-flex items-center px-1 pt-1 border-b-2"
+            :class="[$route.path === item.path ? 'border-blue-500' : 'border-transparent']"
           >
-            <span class="sr-only">Cart</span>
-            <i class="fas fa-shopping-cart text-xl"></i>
-            <span 
-              v-if="cartItemCount > 0"
-              class="absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full"
+            {{ item.name }}
+          </router-link>
+        </div>
+
+        <!-- Right Side Menu -->
+        <div class="flex items-center">
+          <!-- Search -->
+          <div class="relative mx-4">
+            <input
+              type="text"
+              v-model="searchQuery"
+              @input="handleSearch"
+              placeholder="Search products..."
+              class="w-full sm:w-64 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
+          </div>
+
+          <!-- Cart -->
+          <router-link to="/cart" class="relative p-2 text-gray-600 hover:text-blue-600">
+            <i class="fas fa-shopping-cart text-xl"></i>
+            <span v-if="cartItemCount > 0" class="cart-badge">
               {{ cartItemCount }}
             </span>
           </router-link>
 
           <!-- User Menu -->
-          <div class="ml-3 relative">
+          <div class="ml-4 relative">
             <template v-if="isAuthenticated">
-              <router-link 
-                to="/profile"
-                class="p-2 text-gray-400 hover:text-gray-500"
+              <button
+                @click="toggleUserMenu"
+                class="flex items-center space-x-2 focus:outline-none"
               >
-                <i class="fas fa-user text-xl"></i>
-              </router-link>
-              <button 
-                @click="logout"
-                class="ml-2 p-2 text-gray-400 hover:text-gray-500"
-              >
-                <i class="fas fa-sign-out-alt text-xl"></i>
+                <img
+                  :src="user.avatar || 'https://ui-avatars.com/api/?name=' + user.name"
+                  alt="User avatar"
+                  class="h-8 w-8 rounded-full"
+                >
+                <span class="hidden md:block">{{ user.name }}</span>
               </button>
+
+              <!-- Dropdown Menu -->
+              <div
+                v-show="showUserMenu"
+                class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+              >
+                <div class="py-1">
+                  <router-link
+                    to="/profile"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Profile
+                  </router-link>
+                  <router-link
+                    to="/orders"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Orders
+                  </router-link>
+                  <button
+                    @click="logout"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
             </template>
+
             <template v-else>
-              <router-link 
+              <router-link
                 to="/login"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
+                class="btn-primary"
               >
-                Login
-              </router-link>
-              <router-link 
-                to="/register"
-                class="ml-2 bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Register
+                Sign in
               </router-link>
             </template>
           </div>
@@ -82,34 +102,64 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useStore } from 'vuex'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 export default {
   name: 'NavBar',
-  
   setup() {
     const store = useStore()
-    const router = useRouter()
+    const route = useRoute()
+    const searchQuery = ref('')
+    const showUserMenu = ref(false)
 
+    const navItems = [
+      { name: 'Home', path: '/' },
+      { name: 'Products', path: '/products' },
+      { name: 'Trending', path: '/trending' },
+      { name: 'Deals', path: '/deals' }
+    ]
+
+    const isAuthenticated = computed(() => store.state.auth.isAuthenticated)
+    const user = computed(() => store.state.auth.user)
     const cartItemCount = computed(() => store.state.cart.items.length)
-    const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
-    const logout = async () => {
-      await store.dispatch('logout')
-      router.push('/login')
+    const handleSearch = () => {
+      // Implement search functionality
+      store.dispatch('products/searchProducts', searchQuery.value)
     }
 
+    const toggleUserMenu = () => {
+      showUserMenu.value = !showUserMenu.value
+    }
+
+    const logout = () => {
+      store.dispatch('auth/logout')
+    }
+
+    // Close user menu when clicking outside
+    const closeUserMenu = (e) => {
+      if (!e.target.closest('.user-menu')) {
+        showUserMenu.value = false
+      }
+    }
+
+    // Add click event listener
+    window.addEventListener('click', closeUserMenu)
+
     return {
-      cartItemCount,
+      navItems,
+      searchQuery,
+      showUserMenu,
       isAuthenticated,
-      logout
+      user,
+      cartItemCount,
+      handleSearch,
+      toggleUserMenu,
+      logout,
+      route
     }
   }
 }
 </script>
-
-<style scoped>
-/* Add any additional styling here */
-</style>
